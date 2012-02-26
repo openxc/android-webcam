@@ -22,4 +22,4 @@ To run this application, the following conditions should be satisfied.
 
 Supported platform : Iconia Tab A500.
 
- This application will also work in V4L2-enabled pandaboard and beagleboard.
+ This application will also work on V4L2-enabled pandaboard and beagleboard.
