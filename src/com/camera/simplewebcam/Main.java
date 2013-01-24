@@ -10,9 +10,9 @@ public class Main extends Activity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
-		cp = new CameraPreview(this);
-		setContentView(cp);
+		setContentView(R.layout.main);
+		
+		cp = (CameraPreview) findViewById(R.id.cp); 
 	}
 	
 }

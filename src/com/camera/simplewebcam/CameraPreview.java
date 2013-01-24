@@ -1,6 +1,7 @@
 package com.camera.simplewebcam;
 
 import android.content.Context;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -49,8 +50,19 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Runna
         System.loadLibrary("ImageProc");
     }
     
-	CameraPreview(Context context) {
+	public CameraPreview(Context context) {
 		super(context);
+		this.context = context;
+		if(DEBUG) Log.d(TAG,"CameraPreview constructed");
+		setFocusable(true);
+		
+		holder = getHolder();
+		holder.addCallback(this);
+		holder.setType(SurfaceHolder.SURFACE_TYPE_NORMAL);	
+	}
+
+	public CameraPreview(Context context, AttributeSet attrs) {
+		super(context, attrs);
 		this.context = context;
 		if(DEBUG) Log.d(TAG,"CameraPreview constructed");
 		setFocusable(true);
