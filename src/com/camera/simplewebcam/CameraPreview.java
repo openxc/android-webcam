@@ -11,6 +11,7 @@ import android.graphics.Rect;
 class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
 	private static final boolean DEBUG = true;
+	private static final String TAG="WebCam";
 	protected Context context;
 	private SurfaceHolder holder;
     Thread mainLoop = null;
@@ -51,7 +52,7 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Runna
 	CameraPreview(Context context) {
 		super(context);
 		this.context = context;
-		if(DEBUG) Log.d("WebCam","CameraPreview constructed");
+		if(DEBUG) Log.d(TAG,"CameraPreview constructed");
 		setFocusable(true);
 		
 		holder = getHolder();
@@ -103,7 +104,7 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Runna
 
 	@Override
 	public void surfaceCreated(SurfaceHolder holder) {
-		if(DEBUG) Log.d("WebCam", "surfaceCreated");
+		if(DEBUG) Log.d(TAG, "surfaceCreated");
 		if(bmp==null){
 			bmp = Bitmap.createBitmap(IMG_WIDTH, IMG_HEIGHT, Bitmap.Config.ARGB_8888);
 		}
@@ -118,12 +119,12 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Runna
 	
 	@Override
 	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-		if(DEBUG) Log.d("WebCam", "surfaceChanged");
+		if(DEBUG) Log.d(TAG, "surfaceChanged");
 	}
 
 	@Override
 	public void surfaceDestroyed(SurfaceHolder holder) {
-		if(DEBUG) Log.d("WebCam", "surfaceDestroyed");
+		if(DEBUG) Log.d(TAG, "surfaceDestroyed");
 		if(cameraExists){
 			shouldStop = true;
 			while(shouldStop){
