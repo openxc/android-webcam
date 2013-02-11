@@ -18,16 +18,16 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Runna
 
 	private boolean cameraExists=false;
 	private boolean shouldStop=false;
-	
+
 	// /dev/videox (x=cameraId+cameraBase) is used.
 	// In some omap devices, system uses /dev/video[0-3],
 	// so users must use /dev/video[4-].
 	// In such a case, try cameraId=0 and cameraBase=4
 	private int cameraId=0;
 	private int cameraBase=0;
-	
+
 	// This definition also exists in ImageProc.h.
-	// Webcam must support the resolution 640x480 with YUYV format. 
+	// Webcam must support the resolution 640x480 with YUYV format.
 	static final int IMG_WIDTH=640;
 	static final int IMG_HEIGHT=480;
 
@@ -37,7 +37,7 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Runna
     private Rect rect;
     private int dw, dh;
     private float rate;
-  
+
     // JNI functions
     public native int prepareCamera(int videoid);
     public native int prepareCameraWithBase(int videoid, int camerabase);
@@ -47,18 +47,17 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Runna
     static {
         System.loadLibrary("ImageProc");
     }
-    
+
 	CameraPreview(Context context) {
 		super(context);
 		this.context = context;
 		if(DEBUG) Log.d("WebCam","CameraPreview constructed");
 		setFocusable(true);
-		
+
 		holder = getHolder();
 		holder.addCallback(this);
-		holder.setType(SurfaceHolder.SURFACE_TYPE_NORMAL);	
 	}
-	
+
     @Override
     public void run() {
         while (true && cameraExists) {
@@ -79,12 +78,12 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Runna
         			rect = new Rect(dw,dh,dw+winHeight*4/3 -1,dh+winHeight-1);
         		}
         	}
-        	
+
         	// obtaining a camera image (pixel data are stored in an array in JNI).
         	processCamera();
         	// camera image to bmp
         	pixeltobmp(bmp);
-        	
+
             Canvas canvas = getHolder().lockCanvas();
             if (canvas != null)
             {
@@ -95,9 +94,9 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Runna
             }
 
             if(shouldStop){
-            	shouldStop = false;  
+            	shouldStop = false;
             	break;
-            }	        
+            }
         }
     }
 
@@ -109,13 +108,13 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Runna
 		}
 		// /dev/videox (x=cameraId + cameraBase) is used
 		int ret = prepareCameraWithBase(cameraId, cameraBase);
-		
+
 		if(ret!=-1) cameraExists = true;
-		
+
         mainLoop = new Thread(this);
-        mainLoop.start();		
+        mainLoop.start();
 	}
-	
+
 	@Override
 	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
 		if(DEBUG) Log.d("WebCam", "surfaceChanged");
@@ -127,11 +126,11 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Runna
 		if(cameraExists){
 			shouldStop = true;
 			while(shouldStop){
-				try{ 
+				try{
 					Thread.sleep(100); // wait for thread stopping
-				}catch(Exception e){}
+				} catch(Exception e){}
 			}
 		}
 		stopCamera();
-	}   
+	}
 }
