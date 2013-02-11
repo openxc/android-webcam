@@ -1,4 +1,6 @@
-/obj
-/assets
-/bin
-/gen
+obj
+assets
+bin
+gen
+.classpath
+.project
