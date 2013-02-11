@@ -23,3 +23,20 @@ To run this application, the following conditions should be satisfied.
 Supported platform : Iconia Tab A500.
 
  This application will also work on V4L2-enabled pandaboard and beagleboard.
+
+
+## Fix video0 permissions on a rooted Nexus 7
+
+If you're running your own image, edit the file `/ueventd.rc` and re-flash:
+
+```
+/dev/video0               0666   root       root
+```
+
+If you are running stock, you need to manually change the permissions of the
+video device each time you attach it:
+
+```
+su
+chmod 666 /dev/video0
+```
