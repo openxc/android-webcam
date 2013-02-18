@@ -1,12 +1,13 @@
 package com.camera.simplewebcam;
 
 import android.content.Context;
-import android.util.Log;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.util.AttributeSet;
+import android.util.Log;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 
 class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 
@@ -48,8 +49,18 @@ class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Runna
         System.loadLibrary("ImageProc");
     }
 
-	CameraPreview(Context context) {
+	public CameraPreview(Context context) {
 		super(context);
+		this.context = context;
+		if(DEBUG) Log.d("WebCam","CameraPreview constructed");
+		setFocusable(true);
+
+		holder = getHolder();
+		holder.addCallback(this);
+	}
+
+	public CameraPreview(Context context, AttributeSet attrs) {
+		super(context, attrs);
 		this.context = context;
 		if(DEBUG) Log.d("WebCam","CameraPreview constructed");
 		setFocusable(true);
