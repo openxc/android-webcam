@@ -16,7 +16,7 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE    := ImageProc
+LOCAL_MODULE    := webcam
 LOCAL_SRC_FILES := ImageProc.c
 LOCAL_LDLIBS    := -llog -ljnigraphics
 

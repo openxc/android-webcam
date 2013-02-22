@@ -20,7 +20,7 @@ int checkCamerabase(void){
     struct stat st;
     int i;
     int start_from_4 = 1;
-    
+
     /* if /dev/video[0-3] exist, camerabase=4, otherwise, camrerabase = 0 */
     for(i=0 ; i<4 ; i++){
         sprintf(dev_name,"/dev/video%d",i);
@@ -63,7 +63,7 @@ int opendevice(int i)
     return SUCCESS_LOCAL;
 }
 
-int initdevice(void) 
+int initdevice(void)
 {
     struct v4l2_capability cap;
     struct v4l2_cropcap cropcap;
@@ -89,14 +89,14 @@ int initdevice(void)
         LOGE("%s does not support streaming i/o", dev_name);
         return ERROR_LOCAL;
     }
-    
+
     CLEAR (cropcap);
 
     cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
     if (0 == xioctl (fd, VIDIOC_CROPCAP, &cropcap)) {
         crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-        crop.c = cropcap.defrect; 
+        crop.c = cropcap.defrect;
 
         if (-1 == xioctl (fd, VIDIOC_S_CROP, &crop)) {
             switch (errno) {
@@ -113,7 +113,7 @@ int initdevice(void)
 
     fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    fmt.fmt.pix.width       = IMG_WIDTH; 
+    fmt.fmt.pix.width       = IMG_WIDTH;
     fmt.fmt.pix.height      = IMG_HEIGHT;
 
     fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
@@ -348,7 +348,7 @@ void yuyv422toABGRY(unsigned char *src)
     }
     int *lrgb = NULL;
     int *lybuf = NULL;
-        
+
     lrgb = &rgb[0];
     lybuf = &ybuf[0];
 
@@ -403,8 +403,8 @@ void yuyv422toABGRY(unsigned char *src)
 }
 
 
-void 
-Java_com_camera_simplewebcam_CameraPreview_pixeltobmp( JNIEnv* env,jobject thiz,jobject bitmap){
+void
+Java_com_ford_openxc_webcam_CameraPreview_pixeltobmp( JNIEnv* env,jobject thiz,jobject bitmap){
 
     jboolean bo;
 
@@ -422,7 +422,7 @@ Java_com_camera_simplewebcam_CameraPreview_pixeltobmp( JNIEnv* env,jobject thiz,
         LOGE("AndroidBitmap_getInfo() failed ! error=%d", ret);
         return;
     }
-    
+
     width = info.width;
     height = info.height;
 
@@ -449,8 +449,8 @@ Java_com_camera_simplewebcam_CameraPreview_pixeltobmp( JNIEnv* env,jobject thiz,
 
 }
 
-jint 
-Java_com_camera_simplewebcam_CameraPreview_prepareCamera( JNIEnv* env,jobject thiz, jint videoid){
+jint
+Java_com_ford_openxc_webcam_CameraPreview_prepareCamera( JNIEnv* env,jobject thiz, jint videoid){
 
     int ret;
 
@@ -470,7 +470,7 @@ Java_com_camera_simplewebcam_CameraPreview_prepareCamera( JNIEnv* env,jobject th
             stopcapturing();
             uninitdevice ();
             closedevice ();
-            LOGE("device resetted");    
+            LOGE("device resetted");
         }
 
     }
@@ -480,30 +480,30 @@ Java_com_camera_simplewebcam_CameraPreview_prepareCamera( JNIEnv* env,jobject th
         ybuf = (int *)malloc(sizeof(int) * (IMG_WIDTH*IMG_HEIGHT));
     }
     return ret;
-}    
+}
 
 
 
-jint 
-Java_com_camera_simplewebcam_CameraPreview_prepareCameraWithBase( JNIEnv* env,jobject thiz, jint videoid, jint videobase){
-    
+jint
+Java_com_ford_openxc_webcam_CameraPreview_prepareCameraWithBase( JNIEnv* env,jobject thiz, jint videoid, jint videobase){
+
         int ret;
 
         camerabase = videobase;
-    
-        return Java_com_camera_simplewebcam_CameraPreview_prepareCamera(env,thiz,videoid);
-    
+
+        return Java_com_ford_openxc_webcam_CameraPreview_prepareCamera(env,thiz,videoid);
+
 }
 
-void 
-Java_com_camera_simplewebcam_CameraPreview_processCamera( JNIEnv* env,
+void
+Java_com_ford_openxc_webcam_CameraPreview_processCamera( JNIEnv* env,
                                         jobject thiz){
 
     readframeonce();
 }
 
-void 
-Java_com_camera_simplewebcam_CameraPreview_stopCamera(JNIEnv* env,jobject thiz){
+void
+Java_com_ford_openxc_webcam_CameraPreview_stopCamera(JNIEnv* env,jobject thiz){
 
     stopcapturing ();
 
@@ -513,7 +513,7 @@ Java_com_camera_simplewebcam_CameraPreview_stopCamera(JNIEnv* env,jobject thiz){
 
     if(rgb) free(rgb);
     if(ybuf) free(ybuf);
-        
+
     fd = -1;
 
 }

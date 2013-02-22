@@ -1,0 +1,96 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.ford.openxc</groupId>
+    <artifactId>webcam-parent</artifactId>
+    <version>1.0</version>
+    <packaging>pom</packaging>
+    <name>Webcam - Parent</name>
+    <description>Android library to access USB webcams</description>
+    <url>http://openxcplatform.com</url>
+
+    <scm>
+        <url>https://github.com/openxc/android-webcam</url>
+        <connection>scm:git:https://github.com/openxc/android-webcam</connection>
+        <developerConnection>scm:git:https://github.com/openxc/android-webcam</developerConnection>
+    </scm>
+
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>7</version>
+    </parent>
+
+    <modules>
+        <module>library</module>
+        <module>example</module>
+    </modules>
+
+    <licenses>
+        <license>
+            <name>New BSD License</name>
+            <url>http://opensource.org/licenses/BSD-3-Clause</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.google.android</groupId>
+                <artifactId>android</artifactId>
+                <version>4.1.1.4</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.android</groupId>
+                <artifactId>android-test</artifactId>
+                <version>4.1.1.4</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <finalName>${project.artifactId}</finalName>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>com.jayway.maven.plugins.android.generation2</groupId>
+                    <artifactId>android-maven-plugin</artifactId>
+                    <version>3.3.0</version>
+                    <extensions>true</extensions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.6</source>
+                    <target>1.6</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.jayway.maven.plugins.android.generation2</groupId>
+                <artifactId>android-maven-plugin</artifactId>
+                <configuration>
+                    <dex>
+                        <jvmArguments>
+                            <argument>-Xms256m</argument>
+                            <argument>-Xmx512m</argument>
+                        </jvmArguments>
+                    </dex>
+                    <sdk>
+                        <platform>17</platform>
+                    </sdk>
+                    <undeployBeforeDeploy>false</undeployBeforeDeploy>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
