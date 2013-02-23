@@ -1,5 +1,6 @@
 #include "ImageProc.h"
 
+
 int errnoexit(const char *s) {
     LOGE("%s error %d, %s", s, errno, strerror(errno));
     return ERROR_LOCAL;
@@ -18,6 +19,7 @@ int xioctl(int fd, int request, void *arg) {
 int open_device(const char* dev_name) {
     struct stat st;
 
+    LOGI("Opening device at %s", dev_name);
     if(-1 == stat(dev_name, &st)) {
         LOGE("Cannot identify '%s': %d, %s", dev_name, errno, strerror(errno));
         return ERROR_LOCAL;
@@ -42,12 +44,8 @@ int open_device(const char* dev_name) {
     return SUCCESS_LOCAL;
 }
 
-int init_device(void) {
+int init_device(int width, int height) {
     struct v4l2_capability cap;
-    struct v4l2_cropcap cropcap;
-    struct v4l2_crop crop;
-    struct v4l2_format fmt;
-    unsigned int min;
 
     if(-1 == xioctl(fd, VIDIOC_QUERYCAP, &cap)) {
         if(EINVAL == errno) {
@@ -68,6 +66,8 @@ int init_device(void) {
         return ERROR_LOCAL;
     }
 
+    struct v4l2_cropcap cropcap;
+    struct v4l2_crop crop;
     CLEAR(cropcap);
     cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
@@ -85,25 +85,8 @@ int init_device(void) {
         }
     }
 
-    CLEAR(fmt);
-    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-    fmt.fmt.pix.width = IMG_WIDTH;
-    fmt.fmt.pix.height = IMG_HEIGHT;
-
-    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-    fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
-
-    if(-1 == xioctl(fd, VIDIOC_S_FMT, &fmt))
-        return errnoexit("VIDIOC_S_FMT");
-
-    min = fmt.fmt.pix.width * 2;
-    if(fmt.fmt.pix.bytesperline < min)
-        fmt.fmt.pix.bytesperline = min;
-    min = fmt.fmt.pix.bytesperline * fmt.fmt.pix.height;
-    if(fmt.fmt.pix.sizeimage < min)
-        fmt.fmt.pix.sizeimage = min;
-
+    start_capture();
+    set_framesize(width, height);
     return init_mmap();
 }
 
@@ -135,7 +118,8 @@ int init_mmap(void) {
         return ERROR_LOCAL;
     }
 
-    for(n_buffers = 0; n_buffers < req.count; ++n_buffers) { struct v4l2_buffer buf;
+    for(n_buffers = 0; n_buffers < req.count; ++n_buffers) {
+        struct v4l2_buffer buf;
         CLEAR(buf);
 
         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -161,10 +145,14 @@ int init_mmap(void) {
 }
 
 int start_capture(void) {
-    unsigned int i;
-    enum v4l2_buf_type type;
+    if(!camera_detected()) {
+        LOGE("Can't start capture, no device open");
+        return ERROR_LOCAL;
+    }
 
-    for(i = 0; i < n_buffers; ++i) {
+    LOGI("Starting capture");
+
+    for(unsigned int i = 0; i < n_buffers; ++i) {
         struct v4l2_buffer buf;
         CLEAR(buf);
         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -175,8 +163,7 @@ int start_capture(void) {
             return errnoexit("VIDIOC_QBUF");
     }
 
-    type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
+    enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if(-1 == xioctl(fd, VIDIOC_STREAMON, &type))
         return errnoexit("VIDIOC_STREAMON");
 
@@ -214,9 +201,9 @@ int read_frame(void) {
 }
 
 int stop_capturing(void) {
+    LOGI("Stopping capture");
     enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-
-    if(-1 == xioctl(fd, VIDIOC_STREAMOFF, &type)) {
+    if(camera_detected() && -1 == xioctl(fd, VIDIOC_STREAMOFF, &type)) {
         return errnoexit("VIDIOC_STREAMOFF");
     }
 
@@ -230,13 +217,16 @@ int uninit_device(void) {
         }
     }
 
-    free(buffers);
+    if(buffers != NULL) {
+        free(buffers);
+    }
     return SUCCESS_LOCAL;
 }
 
 int close_device(void) {
+    LOGI("Closing video device");
     int result = SUCCESS_LOCAL;
-    if(-1 == close(fd)) {
+    if(camera_detected() && -1 == close(fd)) {
         result = errnoexit("close");
     }
     fd = -1;
@@ -248,10 +238,9 @@ void yuyv422_to_abgry(unsigned char *src) {
         return;
     }
 
-    int frameSize = IMG_WIDTH * IMG_HEIGHT * 2;
     int* lrgb = &rgb[0];
     int* lybuf = &ybuf[0];
-    for(int i = 0; i < frameSize; i += 4) {
+    for(int i = 0; i < dimensions[0] * dimensions[1] * 2; i += 4) {
         unsigned char y1, y2, u, v;
         y1 = src[i];
         u = src[i + 1];
@@ -318,13 +307,45 @@ void Java_com_ford_openxc_webcam_WebcamManager_pixeltobmp(JNIEnv* env,
     AndroidBitmap_unlockPixels(env, bitmap);
 }
 
-jint Java_com_ford_openxc_webcam_WebcamManager_prepareCamera(JNIEnv* env,
-        jobject thiz, jstring deviceName) {
-    const char* dev_name = (*env)->GetStringUTFChars(env, deviceName, 0);
-    int result = open_device(dev_name);
-    (*env)->ReleaseStringUTFChars(env, deviceName, dev_name);
+void set_framesize(int width, int height) {
+    LOGI("Setting frame size to %dx%d", width, height);
+    struct v4l2_format fmt;
+    CLEAR(fmt);
+    fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    // prepare tbl
+    fmt.fmt.pix.width = width;
+    fmt.fmt.pix.height = height;
+
+    fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
+    fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
+
+    if(-1 == xioctl(fd, VIDIOC_S_FMT, &fmt)) {
+        errnoexit("VIDIOC_S_FMT");
+        return;
+    }
+
+    unsigned int min = fmt.fmt.pix.width * 2;
+    if(fmt.fmt.pix.bytesperline < min) {
+        fmt.fmt.pix.bytesperline = min;
+    }
+
+    min = fmt.fmt.pix.bytesperline * fmt.fmt.pix.height;
+    if(fmt.fmt.pix.sizeimage < min) {
+        fmt.fmt.pix.sizeimage = min;
+    }
+
+    dimensions[0] = width;
+    dimensions[1] = height;
+
+    int area = dimensions[0] * dimensions[1];
+    rgb = (int*)malloc(sizeof(int) * area);
+    ybuf = (int*)malloc(sizeof(int) * area);
+}
+
+int start_camera(const char* dev_name, int width, int height) {
+    LOGI("Preparing video device at %s", dev_name);
+
+    // this only really needs to happen once
     for(int i = 0; i < 256; i++) {
         y1192_tbl[i] = 1192 * (i - 16);
         if(y1192_tbl[i] < 0) {
@@ -337,27 +358,32 @@ jint Java_com_ford_openxc_webcam_WebcamManager_prepareCamera(JNIEnv* env,
         u2066_tbl[i] = 2066 * (i - 128);
     }
 
+    int result = open_device(dev_name);
     if(result == ERROR_LOCAL) {
         return result;
     }
 
-    result = init_device();
+    result = init_device(DEFAULT_IMAGE_WIDTH, DEFAULT_IMAGE_HEIGHT);
 
     if(result == ERROR_LOCAL) {
         return result;
     }
 
-    result = start_capture();
-    if(result != SUCCESS_LOCAL) {
-        stop_capturing();
-        uninit_device();
-        close_device();
-        LOGE("device reset");
-    } else {
-        rgb = (int*)malloc(sizeof(int) * (IMG_WIDTH * IMG_HEIGHT));
-        ybuf = (int*)malloc(sizeof(int) * (IMG_WIDTH * IMG_HEIGHT));
-    }
+    return result;
+}
 
+void Java_com_ford_openxc_webcam_WebcamManager_setFramesize(JNIEnv* env,
+        jobject thiz, jint width, jint height) {
+    shutdown_camera();
+    start_camera(dev_name, width, height);
+}
+
+jint Java_com_ford_openxc_webcam_WebcamManager_prepareCamera(JNIEnv* env,
+        jobject thiz, jstring deviceName, jint width, jint height) {
+    const char* name = (*env)->GetStringUTFChars(env, deviceName, 0);
+    strncpy(dev_name, name, 16);
+    int result = start_camera(dev_name, width, height);
+    (*env)->ReleaseStringUTFChars(env, deviceName, dev_name);
     return result;
 }
 
@@ -410,11 +436,6 @@ void shutdown_camera() {
     stop_capturing();
     uninit_device();
     close_device();
-}
-
-void Java_com_ford_openxc_webcam_WebcamManager_stopCamera(JNIEnv* env,
-        jobject thiz) {
-    shutdown_camera();
 
     if(rgb) {
         free(rgb);
@@ -423,5 +444,10 @@ void Java_com_ford_openxc_webcam_WebcamManager_stopCamera(JNIEnv* env,
     if(ybuf) {
         free(ybuf);
     }
+}
+
+void Java_com_ford_openxc_webcam_WebcamManager_stopCamera(JNIEnv* env,
+        jobject thiz) {
+    shutdown_camera();
 }
 

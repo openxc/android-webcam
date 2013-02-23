@@ -7,7 +7,6 @@ import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
-import android.os.Debug;
 import android.os.IBinder;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -45,7 +44,6 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
     }
 
     private void init(Context context) {
-        Debug.waitForDebugger();
         Log.d(TAG, "WebcamPreview constructed");
         setFocusable(true);
 
@@ -122,7 +120,9 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
             height = dh + winHeight - 1;
         }
         mViewWindow = new Rect(dw, dh, width, height);
-
+        if(mWebcamManager != null) {
+            mWebcamManager.setCameraFramesize(winWidth, winHeight);
+        }
     }
 
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -131,6 +131,8 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
             Log.i(TAG, "Bound to WebcamManager");
             synchronized(mServiceSyncToken) {
                 mWebcamManager = ((WebcamManager.WebcamBinder)service).getService();
+                mWebcamManager.setCameraFramesize(mViewWindow.width(),
+                        mViewWindow.height());
                 mServiceSyncToken.notify();
             }
         }

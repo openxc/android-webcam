@@ -14,22 +14,21 @@ import android.util.Log;
 public class WebcamManager extends Service {
 
     private static String TAG = "WebcamManager";
+    private final int CAMERA_ID = 0;
 
     private IBinder mBinder = new WebcamBinder();
-
     private Bitmap mBitmap;
-    private int cameraId = 0;
 
     // This definition also exists in ImageProc.h.
     // Webcam must support the resolution 640x480 with YUYV format.
     static final int IMG_WIDTH = 640;
     static final int IMG_HEIGHT = 480;
 
-    // TODO do these have to be public?
-    private native int prepareCamera(String deviceName);
+    private native int prepareCamera(String deviceName, int width, int height);
     private native void processCamera();
     private native void stopCamera();
     private native void pixeltobmp(Bitmap bitmap);
+    private native void setFramesize(int width, int height);
 
     public native boolean cameraAttached();
 
@@ -50,7 +49,7 @@ public class WebcamManager extends Service {
 
         boolean deviceReady = true;
 
-        String deviceName = "/dev/video" + cameraId;
+        String deviceName = "/dev/video" + CAMERA_ID;
         File deviceFile = new File(deviceName);
         if(deviceFile.exists()) {
             if(!deviceFile.canExecute()) {
@@ -84,12 +83,8 @@ public class WebcamManager extends Service {
         }
 
         if(deviceReady) {
-            Log.i(TAG, "Preparing camera with device name " + deviceName);
-            prepareCamera(deviceName);
+            prepareCamera(deviceName, 640, 480);
         }
-
-        mBitmap = Bitmap.createBitmap(IMG_WIDTH, IMG_HEIGHT,
-                Bitmap.Config.ARGB_8888);
     }
 
     @Override
@@ -105,10 +100,14 @@ public class WebcamManager extends Service {
         return mBinder;
     }
 
+    public void setCameraFramesize(int width, int height) {
+        Log.i(TAG, "Setting frame size to " + width + "x" + height);
+        setFramesize(width, height);
+        mBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+    }
+
     public Bitmap getImage() {
         processCamera();
-        // TODO where do we get the height and width, and is it wasteful to keep
-        // creating the bitmap over and over again?
         // TODO maybe it's getImage(Bitmap) so you can decide what size you
         // want. do we expect it to be of certain dimensions in JNI code?
         if(cameraAttached()) {
