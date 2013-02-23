@@ -20,6 +20,7 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
 
     private WebcamManager mWebcamManager;
     private boolean mRunning = true;
+    private Object mServiceSyncToken = new Object();
     private Context mContext;
 
     private SurfaceHolder mHolder;
@@ -78,11 +79,21 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
     @Override
     public void run() {
         while(mRunning) {
-            Bitmap bitmap = mWebcamManager.getImage();
-            Canvas canvas = mHolder.lockCanvas();
-            if(canvas != null) {
-                canvas.drawBitmap(bitmap, null, rect, null);
-                mHolder.unlockCanvasAndPost(canvas);
+            synchronized(mServiceSyncToken) {
+                if(mWebcamManager == null) {
+                    try {
+                        mServiceSyncToken.wait();
+                    } catch(InterruptedException e) {
+                        break;
+                    }
+                }
+
+                Bitmap bitmap = mWebcamManager.getImage();
+                Canvas canvas = mHolder.lockCanvas();
+                if(canvas != null) {
+                    canvas.drawBitmap(bitmap, null, rect, null);
+                    mHolder.unlockCanvasAndPost(canvas);
+                }
             }
         }
     }
@@ -114,12 +125,18 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
         public void onServiceConnected(ComponentName className,
                 IBinder service) {
             Log.i(TAG, "Bound to WebcamManager");
-            mWebcamManager = ((WebcamManager.WebcamBinder)service).getService();
+            synchronized(mServiceSyncToken) {
+                mWebcamManager = ((WebcamManager.WebcamBinder)service).getService();
+                mServiceSyncToken.notify();
+            }
         }
 
         public void onServiceDisconnected(ComponentName className) {
             Log.w(TAG, "WebcamManager disconnected unexpectedly");
-            mWebcamManager = null;
+            synchronized(mServiceSyncToken) {
+                mWebcamManager = null;
+                mServiceSyncToken.notify();
+            }
         }
     };
 }
