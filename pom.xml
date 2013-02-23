@@ -23,7 +23,7 @@
 
     <modules>
         <module>android-webcam-library</module>
-        <module>android-webcam-example</module>
+        <module>example</module>
     </modules>
 
     <licenses>
