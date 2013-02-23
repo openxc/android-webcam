@@ -1,23 +1,11 @@
 package com.ford.openxc.webcam;
 
 import android.app.Service;
-import android.content.ComponentName;
-import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
+import android.graphics.Bitmap;
 import android.os.Binder;
 import android.os.IBinder;
-import android.os.RemoteException;
 import android.util.Log;
-import android.widget.Toast;
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Rect;
-import android.util.AttributeSet;
-import android.util.Log;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 
 public class WebcamManager extends Service {
 
@@ -60,7 +48,7 @@ public class WebcamManager extends Service {
         Log.i(TAG, "Service starting");
 
         // /dev/videox (x=cameraId + cameraBase) is used
-        int ret = prepareCameraWithBase(cameraId, cameraBase);
+        prepareCameraWithBase(cameraId, cameraBase);
     }
 
     @Override

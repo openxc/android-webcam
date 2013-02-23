@@ -1,15 +1,13 @@
 package com.ford.openxc.webcam;
 
-import android.os.IBinder;
-import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.os.IBinder;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -25,7 +23,6 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
     private Context mContext;
 
     private SurfaceHolder mHolder;
-    private Bitmap bmp=null;
 
     // This definition also exists in ImageProc.h.
     // Webcam must support the resolution 640x480 with YUYV format.
@@ -37,7 +34,6 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
     private int winHeight=0;
     private Rect rect;
     private int dw, dh;
-    private float rate;
 
     public WebcamPreview(Context context) {
         super(context);
@@ -66,13 +62,11 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
         if(winWidth * 3 / 4 <= winHeight) {
             dw = 0;
             dh = (winHeight - winWidth * 3 / 4) / 2;
-            rate = ((float) winWidth) / IMG_WIDTH;
             rect = new Rect(dw, dh, dw + winWidth - 1,
                     dh + winWidth * 3 / 4 - 1);
         } else {
             dw = (winWidth - winHeight * 4 / 3) / 2;
             dh = 0;
-            rate = ((float) winHeight) / IMG_HEIGHT;
             rect = new Rect(dw, dh, dw + winHeight * 4 / 3 - 1,
                     dh + winHeight - 1);
         }
@@ -87,7 +81,7 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
             Bitmap bitmap = mWebcamManager.getImage();
             Canvas canvas = mHolder.lockCanvas();
             if(canvas != null) {
-                canvas.drawBitmap(bmp, null, rect, null);
+                canvas.drawBitmap(bitmap, null, rect, null);
                 mHolder.unlockCanvasAndPost(canvas);
             }
         }
