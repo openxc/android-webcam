@@ -37,9 +37,6 @@ static int fd = -1;
 struct buffer* buffers = NULL;
 static unsigned int n_buffers = 0;
 
-static char dev_name[16];
-int camerabase = -1;
-
 int* rgb = NULL;
 int* ybuf = NULL;
 
@@ -55,7 +52,7 @@ int errnoexit(const char* s);
 int xioctl(int fd, int request, void* arg);
 
 void shutdown_camera();
-int open_device(int videoid);
+int open_device(const char* videoid);
 int init_device(void);
 int init_mmap(void);
 int start_capture(void);
@@ -73,9 +70,7 @@ bool camera_detected();
 void yuyv422_to_abgry(unsigned char* src);
 
 jint Java_com_ford_openxc_webcam_WebcamManager_prepareCamera(JNIEnv* env,
-        jobject thiz, jint videoid);
-jint Java_com_ford_openxc_webcam_WebcamManager_prepareCameraWithBase(
-        JNIEnv* env, jobject thiz, jint videoid, jint videobase);
+        jobject thiz, jstring deviceName);
 void Java_com_ford_openxc_webcam_WebcamManager_processCamera(JNIEnv* env,
         jobject thiz);
 jboolean Java_com_ford_openxc_webcam_WebcamManager_cameraAttached(JNIEnv* env,

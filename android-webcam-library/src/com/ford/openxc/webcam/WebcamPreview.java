@@ -88,6 +88,10 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
                     }
                 }
 
+                if(!mWebcamManager.cameraAttached()) {
+                    mRunning = false;
+                }
+
                 Bitmap bitmap = mWebcamManager.getImage();
                 Canvas canvas = mHolder.lockCanvas();
                 if(canvas != null) {

@@ -1,5 +1,9 @@
 package com.ford.openxc.webcam;
 
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+
 import android.app.Service;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -21,7 +25,7 @@ public class WebcamManager extends Service {
     static final int IMG_HEIGHT = 480;
 
     // TODO do these have to be public?
-    private native int prepareCamera(int videoid);
+    private native int prepareCamera(String deviceName);
     private native void processCamera();
     private native void stopCamera();
     private native void pixeltobmp(Bitmap bitmap);
@@ -43,8 +47,45 @@ public class WebcamManager extends Service {
         super.onCreate();
         Log.i(TAG, "Service starting");
 
-        // /dev/videox (x=cameraId)
-        prepareCamera(cameraId);
+        boolean deviceReady = true;
+
+        String deviceName = "/dev/video" + cameraId;
+        File deviceFile = new File(deviceName);
+        if(deviceFile.exists()) {
+            if(!deviceFile.canExecute()) {
+                Log.d(TAG, "Insufficient permissions on " + deviceName +
+                        " -- will try and change as root");
+                try {
+                    Process p = Runtime.getRuntime().exec("su");
+                    DataOutputStream stream = new DataOutputStream(p.getOutputStream());
+                    stream.writeBytes("chmod 0666 " + deviceName + "\n");
+                    stream.flush();
+                    stream.writeBytes("exit\n");
+                    stream.flush();
+                    p.waitFor();
+
+                    if(p.exitValue() != 0) {
+                        Log.w(TAG, "Unable to fix permissions on " + deviceName);
+                        deviceReady = false;
+                    }
+                } catch(IOException e) {
+                    Log.w(TAG, "Unable to fix permissions - " +
+                            "device may not be rooted", e);
+                    deviceReady = false;
+                } catch(InterruptedException e) {
+                    Log.w(TAG, "Unable to fix permissions", e);
+                    deviceReady = false;
+                }
+            }
+        } else {
+            Log.w(TAG, deviceName + " does not exist");
+            deviceReady = false;
+        }
+
+        if(deviceReady) {
+            Log.i(TAG, "Preparing camera with device name " + deviceName);
+            prepareCamera(deviceName);
+        }
     }
 
     @Override

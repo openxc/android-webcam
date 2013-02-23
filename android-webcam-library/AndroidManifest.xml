@@ -5,5 +5,5 @@
 
     <service android:name=".WebcamManager"/>
 
-    <uses-sdk android:targetSdkVersion="17" android:minSdkVersion="8"></uses-sdk>
+    <uses-sdk android:targetSdkVersion="17" android:minSdkVersion="9"></uses-sdk>
 </manifest>

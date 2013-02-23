@@ -15,10 +15,9 @@ int xioctl(int fd, int request, void *arg) {
     return r;
 }
 
-int open_device(int deviceId) {
+int open_device(const char* dev_name) {
     struct stat st;
 
-    sprintf(dev_name, "/dev/video%d", deviceId);
     if(-1 == stat(dev_name, &st)) {
         LOGE("Cannot identify '%s': %d, %s", dev_name, errno, strerror(errno));
         return ERROR_LOCAL;
@@ -30,6 +29,10 @@ int open_device(int deviceId) {
     }
 
     fd = open(dev_name, O_RDWR | O_NONBLOCK, 0);
+
+    if(EACCES == errno) {
+        LOGE("Insufficient permissions on '%s': %d, %s", dev_name, errno, strerror(errno));
+    }
 
     if(-1 == fd) {
         LOGE("Cannot open '%s': %d, %s", dev_name, errno, strerror(errno));
@@ -48,7 +51,7 @@ int init_device(void) {
 
     if(-1 == xioctl(fd, VIDIOC_QUERYCAP, &cap)) {
         if(EINVAL == errno) {
-            LOGE("%s is no V4L2 device", dev_name);
+            LOGE("not a valid V4L2 device");
             return ERROR_LOCAL;
         } else {
             return errnoexit("VIDIOC_QUERYCAP");
@@ -56,12 +59,12 @@ int init_device(void) {
     }
 
     if(!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
-        LOGE("%s is no video capture device", dev_name);
+        LOGE("device is not a video capture device");
         return ERROR_LOCAL;
     }
 
     if(!(cap.capabilities & V4L2_CAP_STREAMING)) {
-        LOGE("%s does not support streaming i/o", dev_name);
+        LOGE("device does not support streaming i/o");
         return ERROR_LOCAL;
     }
 
@@ -332,8 +335,10 @@ void Java_com_ford_openxc_webcam_WebcamManager_pixeltobmp(JNIEnv* env,
 }
 
 jint Java_com_ford_openxc_webcam_WebcamManager_prepareCamera(JNIEnv* env,
-        jobject thiz, jint videoid) {
-    int result = open_device(videoid);
+        jobject thiz, jstring deviceName) {
+    const char* dev_name = (*env)->GetStringUTFChars(env, deviceName, 0);
+    int result = open_device(dev_name);
+    (*env)->ReleaseStringUTFChars(env, deviceName, dev_name);
 
     if(result == ERROR_LOCAL) {
         return result;
