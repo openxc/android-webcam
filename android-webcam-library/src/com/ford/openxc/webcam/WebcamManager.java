@@ -13,12 +13,7 @@ public class WebcamManager extends Service {
 
     private IBinder mBinder = new WebcamBinder();
 
-    // /dev/videox (x=cameraId+cameraBase) is used.
-    // In some omap devices, system uses /dev/video[0-3],
-    // so users must use /dev/video[4-].
-    // In such a case, try cameraId=0 and cameraBase=4
     private int cameraId = 0;
-    private int cameraBase = 0;
 
     // This definition also exists in ImageProc.h.
     // Webcam must support the resolution 640x480 with YUYV format.
@@ -26,11 +21,12 @@ public class WebcamManager extends Service {
     static final int IMG_HEIGHT = 480;
 
     // TODO do these have to be public?
-    public native int prepareCamera(int videoid);
-    public native int prepareCameraWithBase(int videoid, int camerabase);
-    public native void processCamera();
-    public native void stopCamera();
-    public native void pixeltobmp(Bitmap bitmap);
+    private native int prepareCamera(int videoid);
+    private native void processCamera();
+    private native void stopCamera();
+    private native void pixeltobmp(Bitmap bitmap);
+
+    public native boolean cameraAttached();
 
     static {
         System.loadLibrary("webcam");
@@ -47,8 +43,8 @@ public class WebcamManager extends Service {
         super.onCreate();
         Log.i(TAG, "Service starting");
 
-        // /dev/videox (x=cameraId + cameraBase) is used
-        prepareCameraWithBase(cameraId, cameraBase);
+        // /dev/videox (x=cameraId)
+        prepareCamera(cameraId);
     }
 
     @Override
@@ -65,6 +61,7 @@ public class WebcamManager extends Service {
     }
 
     public Bitmap getImage() {
+
         processCamera();
         // TODO where do we get the height and width, and is it wasteful to keep
         // creating the bitmap over and over again?
@@ -72,7 +69,9 @@ public class WebcamManager extends Service {
         // want. do we expect it to be of certain dimensions in JNI code?
         Bitmap bitmap = Bitmap.createBitmap(IMG_WIDTH, IMG_HEIGHT,
                 Bitmap.Config.ARGB_8888);
-        pixeltobmp(bitmap);
+        if(cameraAttached()) {
+            pixeltobmp(bitmap);
+        }
         return bitmap;
     }
 }

@@ -4,6 +4,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <assert.h>
 
 #include <fcntl.h>
@@ -32,11 +33,11 @@ struct buffer {
     size_t length;
 };
 
-static char dev_name[16];
 static int fd = -1;
 struct buffer* buffers = NULL;
 static unsigned int n_buffers = 0;
 
+static char dev_name[16];
 int camerabase = -1;
 
 int* rgb = NULL;
@@ -53,27 +54,31 @@ int errnoexit(const char* s);
 
 int xioctl(int fd, int request, void* arg);
 
-int checkCamerabase(void);
-int opendevice(int videoid);
-int initdevice(void);
-int initmmap(void);
-int startcapturing(void);
+void shutdown_camera();
+int open_device(int videoid);
+int init_device(void);
+int init_mmap(void);
+int start_capture(void);
 
-int readframeonce(void);
-int readframe(void);
-void processimage(const void* p);
+int read_frame(void);
+void process_image(const void* p);
+void process_camera();
 
-int stopcapturing(void);
-int uninitdevice(void);
-int closedevice(void);
+int stop_capturing(void);
+int uninit_device(void);
+int close_device(void);
 
-void yuyv422toABGRY(unsigned char* src);
+bool camera_detected();
+
+void yuyv422_to_abgry(unsigned char* src);
 
 jint Java_com_ford_openxc_webcam_WebcamManager_prepareCamera(JNIEnv* env,
         jobject thiz, jint videoid);
 jint Java_com_ford_openxc_webcam_WebcamManager_prepareCameraWithBase(
         JNIEnv* env, jobject thiz, jint videoid, jint videobase);
 void Java_com_ford_openxc_webcam_WebcamManager_processCamera(JNIEnv* env,
+        jobject thiz);
+jboolean Java_com_ford_openxc_webcam_WebcamManager_cameraAttached(JNIEnv* env,
         jobject thiz);
 void Java_com_ford_openxc_webcam_WebcamManager_stopCamera(JNIEnv* env,
         jobject thiz);

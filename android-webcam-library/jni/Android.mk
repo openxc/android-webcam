@@ -19,5 +19,6 @@ include $(CLEAR_VARS)
 LOCAL_MODULE    := webcam
 LOCAL_SRC_FILES := ImageProc.c
 LOCAL_LDLIBS    := -llog -ljnigraphics
+LOCAL_CFLAGS += -std=c99
 
 include $(BUILD_SHARED_LIBRARY)
