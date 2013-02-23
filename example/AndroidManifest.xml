@@ -10,7 +10,7 @@
 
     <uses-sdk android:targetSdkVersion="17" android:minSdkVersion="8"></uses-sdk>
 
-    <application android:label="@string/app_name">
+    <application android:label="@string/app_name" android:debuggable="true">
         <activity android:name=".CameraActivity"
                 android:screenOrientation="landscape">
 
