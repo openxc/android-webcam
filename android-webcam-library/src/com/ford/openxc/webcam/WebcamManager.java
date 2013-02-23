@@ -17,6 +17,7 @@ public class WebcamManager extends Service {
 
     private IBinder mBinder = new WebcamBinder();
 
+    private Bitmap mBitmap;
     private int cameraId = 0;
 
     // This definition also exists in ImageProc.h.
@@ -86,6 +87,9 @@ public class WebcamManager extends Service {
             Log.i(TAG, "Preparing camera with device name " + deviceName);
             prepareCamera(deviceName);
         }
+
+        mBitmap = Bitmap.createBitmap(IMG_WIDTH, IMG_HEIGHT,
+                Bitmap.Config.ARGB_8888);
     }
 
     @Override
@@ -102,17 +106,14 @@ public class WebcamManager extends Service {
     }
 
     public Bitmap getImage() {
-
         processCamera();
         // TODO where do we get the height and width, and is it wasteful to keep
         // creating the bitmap over and over again?
         // TODO maybe it's getImage(Bitmap) so you can decide what size you
         // want. do we expect it to be of certain dimensions in JNI code?
-        Bitmap bitmap = Bitmap.createBitmap(IMG_WIDTH, IMG_HEIGHT,
-                Bitmap.Config.ARGB_8888);
         if(cameraAttached()) {
-            pixeltobmp(bitmap);
+            pixeltobmp(mBitmap);
         }
-        return bitmap;
+        return mBitmap;
     }
 }

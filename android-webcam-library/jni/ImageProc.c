@@ -357,8 +357,8 @@ jint Java_com_ford_openxc_webcam_WebcamManager_prepareCamera(JNIEnv* env,
         close_device();
         LOGE("device reset");
     } else {
-        rgb = (int*)malloc(sizeof(int) * (IMG_WIDTH*IMG_HEIGHT));
-        ybuf = (int*)malloc(sizeof(int) * (IMG_WIDTH*IMG_HEIGHT));
+        rgb = (int*)malloc(sizeof(int) * (IMG_WIDTH * IMG_HEIGHT));
+        ybuf = (int*)malloc(sizeof(int) * (IMG_WIDTH * IMG_HEIGHT));
     }
 
     return result;
