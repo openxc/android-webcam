@@ -248,21 +248,6 @@ void yuyv422_to_abgry(unsigned char *src) {
         return;
     }
 
-    if(yuv_tbl_ready==0) {
-        for(int i = 0; i < 256; i++) {
-            y1192_tbl[i] = 1192 * (i - 16);
-            if(y1192_tbl[i] < 0) {
-                y1192_tbl[i] = 0;
-            }
-
-            v1634_tbl[i] = 1634 * (i - 128);
-            v833_tbl[i] = 833 * (i - 128);
-            u400_tbl[i] = 400 * (i - 128);
-            u2066_tbl[i] = 2066 * (i - 128);
-        }
-        yuv_tbl_ready = 1;
-    }
-
     int frameSize = IMG_WIDTH * IMG_HEIGHT * 2;
     int* lrgb = &rgb[0];
     int* lybuf = &ybuf[0];
@@ -325,8 +310,7 @@ void Java_com_ford_openxc_webcam_WebcamManager_pixeltobmp(JNIEnv* env,
     }
 
     int* colors = (int*) pixels;
-    int *lrgb = NULL;
-    lrgb = &rgb[0];
+    int *lrgb = &rgb[0];
     for(int i = 0; i < info.width * info.height; i++) {
         *colors++ = *lrgb++;
     }
@@ -339,6 +323,19 @@ jint Java_com_ford_openxc_webcam_WebcamManager_prepareCamera(JNIEnv* env,
     const char* dev_name = (*env)->GetStringUTFChars(env, deviceName, 0);
     int result = open_device(dev_name);
     (*env)->ReleaseStringUTFChars(env, deviceName, dev_name);
+
+    // prepare tbl
+    for(int i = 0; i < 256; i++) {
+        y1192_tbl[i] = 1192 * (i - 16);
+        if(y1192_tbl[i] < 0) {
+            y1192_tbl[i] = 0;
+        }
+
+        v1634_tbl[i] = 1634 * (i - 128);
+        v833_tbl[i] = 833 * (i - 128);
+        u400_tbl[i] = 400 * (i - 128);
+        u2066_tbl[i] = 2066 * (i - 128);
+    }
 
     if(result == ERROR_LOCAL) {
         return result;

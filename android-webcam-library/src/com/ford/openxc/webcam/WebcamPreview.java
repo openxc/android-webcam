@@ -7,6 +7,7 @@ import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.os.Debug;
 import android.os.IBinder;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -31,10 +32,7 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
     static final int IMG_HEIGHT = 480;
 
     // The following variables are used to draw camera images.
-    private int winWidth=0;
-    private int winHeight=0;
-    private Rect rect;
-    private int dw, dh;
+    private Rect mViewWindow;
 
     public WebcamPreview(Context context) {
         super(context);
@@ -47,6 +45,7 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
     }
 
     private void init(Context context) {
+        Debug.waitForDebugger();
         Log.d(TAG, "WebcamPreview constructed");
         setFocusable(true);
 
@@ -54,23 +53,6 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
 
         mHolder = getHolder();
         mHolder.addCallback(this);
-
-        // TODO does this ever change, e.g. do we need to run it again in
-        // surfaceChanged?
-        winWidth = this.getWidth();
-        winHeight = this.getHeight();
-
-        if(winWidth * 3 / 4 <= winHeight) {
-            dw = 0;
-            dh = (winHeight - winWidth * 3 / 4) / 2;
-            rect = new Rect(dw, dh, dw + winWidth - 1,
-                    dh + winWidth * 3 / 4 - 1);
-        } else {
-            dw = (winWidth - winHeight * 4 / 3) / 2;
-            dh = 0;
-            rect = new Rect(dw, dh, dw + winHeight * 4 / 3 - 1,
-                    dh + winHeight - 1);
-        }
 
         mContext.bindService(new Intent(mContext, WebcamManager.class),
                 mConnection, Context.BIND_AUTO_CREATE);
@@ -95,7 +77,7 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
                 Bitmap bitmap = mWebcamManager.getImage();
                 Canvas canvas = mHolder.lockCanvas();
                 if(canvas != null) {
-                    canvas.drawBitmap(bitmap, null, rect, null);
+                    canvas.drawBitmap(bitmap, null, mViewWindow, null);
                     mHolder.unlockCanvasAndPost(canvas);
                 }
             }
@@ -120,9 +102,27 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
         }
     }
 
-    public void surfaceChanged(SurfaceHolder holder, int format, int width,
-            int height) {
+    public void surfaceChanged(SurfaceHolder holder, int format, int winWidth,
+            int winHeight) {
         Log.d("WebCam", "surfaceChanged");
+
+        int width;
+        int height;
+        int dw;
+        int dh;
+        if(winWidth * 3 / 4 <= winHeight) {
+            dw = 0;
+            dh = (winHeight - winWidth * 3 / 4) / 2;
+            width = dw + winWidth - 1;
+            height = dh + winWidth * 3 / 4 - 1;
+        } else {
+            dw = (winWidth - winHeight * 4 / 3) / 2;
+            dh = 0;
+            width = dw + winHeight * 4 / 3 - 1;
+            height = dh + winHeight - 1;
+        }
+        mViewWindow = new Rect(dw, dh, width, height);
+
     }
 
     private ServiceConnection mConnection = new ServiceConnection() {
