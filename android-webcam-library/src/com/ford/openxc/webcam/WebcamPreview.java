@@ -7,7 +7,6 @@ import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
-import android.os.Debug;
 import android.os.IBinder;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -25,11 +24,6 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
     private Context mContext;
 
     private SurfaceHolder mHolder;
-
-    // This definition also exists in ImageProc.h.
-    // Webcam must support the resolution 640x480 with YUYV format.
-    static final int IMG_WIDTH = 640;
-    static final int IMG_HEIGHT = 480;
 
     // The following variables are used to draw camera images.
     private Rect mViewWindow;
