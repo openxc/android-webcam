@@ -45,7 +45,6 @@ class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
     }
 
     private void init(Context context) {
-        Debug.waitForDebugger();
         Log.d(TAG, "WebcamPreview constructed");
         setFocusable(true);
 
