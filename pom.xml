@@ -22,8 +22,8 @@
     </parent>
 
     <modules>
-        <module>library</module>
-        <module>example</module>
+        <module>android-webcam-library</module>
+        <module>android-webcam-example</module>
     </modules>
 
     <licenses>
