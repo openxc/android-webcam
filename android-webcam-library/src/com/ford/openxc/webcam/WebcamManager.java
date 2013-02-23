@@ -53,7 +53,7 @@ public class WebcamManager extends Service {
         String deviceName = "/dev/video" + cameraId;
         File deviceFile = new File(deviceName);
         if(deviceFile.exists()) {
-            if(!deviceFile.canExecute()) {
+            if(!deviceFile.canRead()) {
                 Log.d(TAG, "Insufficient permissions on " + deviceName +
                         " -- will try and change as root");
                 try {
