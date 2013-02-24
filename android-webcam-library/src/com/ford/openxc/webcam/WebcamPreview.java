@@ -13,20 +13,18 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-class WebcamPreview extends SurfaceView implements SurfaceHolder.Callback,
-        Runnable {
+public class WebcamPreview extends SurfaceView implements
+        SurfaceHolder.Callback, Runnable {
 
     private static String TAG = "WebcamPreview";
 
-    private WebcamManager mWebcamManager;
-    private boolean mRunning = true;
-    private Object mServiceSyncToken = new Object();
-    private Context mContext;
-
-    private SurfaceHolder mHolder;
-
-    // The following variables are used to draw camera images.
     private Rect mViewWindow;
+
+    protected boolean mRunning = true;
+    protected Object mServiceSyncToken = new Object();
+    protected WebcamManager mWebcamManager;
+    protected SurfaceHolder mHolder;
+    protected Context mContext;
 
     public WebcamPreview(Context context) {
         super(context);
