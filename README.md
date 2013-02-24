@@ -37,3 +37,8 @@ video device each time you attach it:
 su
 chmod 666 /dev/video0
 ```
+
+## License
+
+Copyright (c) 2011-2013 Ford Motor Company
+Licensed under the BSD license.
