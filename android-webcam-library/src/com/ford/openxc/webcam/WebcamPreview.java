@@ -18,8 +18,7 @@ public class WebcamPreview extends SurfaceView implements
 
     private static String TAG = "WebcamPreview";
 
-    private Rect mViewWindow;
-
+    protected Rect mViewWindow;
     protected boolean mRunning = true;
     protected Object mServiceSyncToken = new Object();
     protected WebcamManager mWebcamManager;
