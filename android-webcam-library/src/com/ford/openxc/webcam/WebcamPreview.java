@@ -43,9 +43,6 @@ public class WebcamPreview extends SurfaceView implements
 
         mHolder = getHolder();
         mHolder.addCallback(this);
-
-        mContext.bindService(new Intent(mContext, WebcamManager.class),
-                mConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
@@ -73,6 +70,9 @@ public class WebcamPreview extends SurfaceView implements
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         Log.d(TAG, "Surface created");
+        mRunning = true;
+        mContext.bindService(new Intent(mContext, WebcamManager.class),
+                mConnection, Context.BIND_AUTO_CREATE);
         (new Thread(this)).start();
     }
 
@@ -81,10 +81,10 @@ public class WebcamPreview extends SurfaceView implements
         Log.d(TAG, "Surface destroyed");
         mRunning = false;
 
-        if(mConnection != null) {
+        if(mWebcamManager != null) {
             Log.i(TAG, "Unbinding from webcam manager");
             mContext.unbindService(mConnection);
-            mConnection = null;
+            mWebcamManager = null;
         }
     }
 

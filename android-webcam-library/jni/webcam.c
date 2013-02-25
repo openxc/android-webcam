@@ -411,6 +411,9 @@ void Java_com_ford_openxc_webcam_NativeWebcam_loadNextFrame(JNIEnv* env,
     AndroidBitmap_unlockPixels(env, bitmap);
 }
 
+// Functions below this point are basically just JNI wrappers, no significant
+// work done here.
+
 jint Java_com_ford_openxc_webcam_NativeWebcam_prepareCamera(JNIEnv* env,
         jobject thiz, jstring deviceName, jint width, jint height) {
     const char* dev_name = (*env)->GetStringUTFChars(env, deviceName, 0);
