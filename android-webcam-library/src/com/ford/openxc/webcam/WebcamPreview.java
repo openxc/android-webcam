@@ -15,31 +15,27 @@ import android.view.SurfaceView;
 
 public class WebcamPreview extends SurfaceView implements
         SurfaceHolder.Callback, Runnable {
-
     private static String TAG = "WebcamPreview";
 
-    protected Rect mViewWindow;
-    protected boolean mRunning = true;
-    protected Object mServiceSyncToken = new Object();
-    protected WebcamManager mWebcamManager;
-    protected SurfaceHolder mHolder;
-    protected Context mContext;
+    private Rect mViewWindow;
+    private boolean mRunning = true;
+    private Object mServiceSyncToken = new Object();
+    private WebcamManager mWebcamManager;
+    private SurfaceHolder mHolder;
 
     public WebcamPreview(Context context) {
         super(context);
-        init(context);
+        init();
     }
 
     public WebcamPreview(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init(context);
+        init();
     }
 
-    private void init(Context context) {
+    private void init() {
         Log.d(TAG, "WebcamPreview constructed");
         setFocusable(true);
-
-        mContext = context;
 
         mHolder = getHolder();
         mHolder.addCallback(this);
@@ -60,18 +56,22 @@ public class WebcamPreview extends SurfaceView implements
                 Bitmap bitmap = mWebcamManager.getFrame();
                 Canvas canvas = mHolder.lockCanvas();
                 if(canvas != null) {
-                    canvas.drawBitmap(bitmap, null, mViewWindow, null);
+                    drawOnCanvas(canvas, bitmap);
                     mHolder.unlockCanvasAndPost(canvas);
                 }
             }
         }
     }
 
+    protected void drawOnCanvas(Canvas canvas, Bitmap videoBitmap) {
+        canvas.drawBitmap(videoBitmap, null, mViewWindow, null);
+    }
+
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         Log.d(TAG, "Surface created");
         mRunning = true;
-        mContext.bindService(new Intent(mContext, WebcamManager.class),
+        getContext().bindService(new Intent(getContext(), WebcamManager.class),
                 mConnection, Context.BIND_AUTO_CREATE);
         (new Thread(this)).start();
     }
@@ -83,7 +83,7 @@ public class WebcamPreview extends SurfaceView implements
 
         if(mWebcamManager != null) {
             Log.i(TAG, "Unbinding from webcam manager");
-            mContext.unbindService(mConnection);
+            getContext().unbindService(mConnection);
             mWebcamManager = null;
         }
     }
