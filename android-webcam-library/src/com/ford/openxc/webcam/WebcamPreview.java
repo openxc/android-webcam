@@ -88,6 +88,7 @@ public class WebcamPreview extends SurfaceView implements
         }
     }
 
+    @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int winWidth,
             int winHeight) {
         Log.d("WebCam", "surfaceChanged");
@@ -104,7 +105,6 @@ public class WebcamPreview extends SurfaceView implements
             height = dh + winHeight - 1;
         }
         mViewWindow = new Rect(dw, dh, width, height);
-
     }
 
     private ServiceConnection mConnection = new ServiceConnection() {
