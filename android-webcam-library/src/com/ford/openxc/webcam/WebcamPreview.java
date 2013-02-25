@@ -60,11 +60,7 @@ public class WebcamPreview extends SurfaceView implements
                     }
                 }
 
-                if(!mWebcamManager.cameraAttached()) {
-                    mRunning = false;
-                }
-
-                Bitmap bitmap = mWebcamManager.getImage();
+                Bitmap bitmap = mWebcamManager.getFrame();
                 Canvas canvas = mHolder.lockCanvas();
                 if(canvas != null) {
                     canvas.drawBitmap(bitmap, null, mViewWindow, null);
@@ -96,10 +92,7 @@ public class WebcamPreview extends SurfaceView implements
             int winHeight) {
         Log.d("WebCam", "surfaceChanged");
 
-        int width;
-        int height;
-        int dw;
-        int dh;
+        int width, height, dw, dh;
         if(winWidth * 3 / 4 <= winHeight) {
             dw = 0;
             dh = (winHeight - winWidth * 3 / 4) / 2;
@@ -128,6 +121,7 @@ public class WebcamPreview extends SurfaceView implements
         public void onServiceDisconnected(ComponentName className) {
             Log.w(TAG, "WebcamManager disconnected unexpectedly");
             synchronized(mServiceSyncToken) {
+                mRunning = false;
                 mWebcamManager = null;
                 mServiceSyncToken.notify();
             }

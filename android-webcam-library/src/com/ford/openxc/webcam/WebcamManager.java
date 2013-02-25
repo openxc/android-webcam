@@ -1,9 +1,5 @@
 package com.ford.openxc.webcam;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.IOException;
-
 import android.app.Service;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -16,26 +12,7 @@ public class WebcamManager extends Service {
     private static String TAG = "WebcamManager";
 
     private IBinder mBinder = new WebcamBinder();
-
-    private Bitmap mBitmap;
-    private int cameraId = 0;
-
-    // This definition also exists in ImageProc.h.
-    // Webcam must support the resolution 640x480 with YUYV format.
-    static final int IMG_WIDTH = 640;
-    static final int IMG_HEIGHT = 480;
-
-    // TODO do these have to be public?
-    private native int prepareCamera(String deviceName);
-    private native void processCamera();
-    private native void stopCamera();
-    private native void pixeltobmp(Bitmap bitmap);
-
-    public native boolean cameraAttached();
-
-    static {
-        System.loadLibrary("webcam");
-    }
+    private Webcam mWebcam;
 
     public class WebcamBinder extends Binder {
         public WebcamManager getService() {
@@ -48,35 +25,14 @@ public class WebcamManager extends Service {
         super.onCreate();
         Log.i(TAG, "Service starting");
 
-        boolean deviceReady = true;
-
-        String deviceName = "/dev/video" + cameraId;
-        File deviceFile = new File(deviceName);
-        if(deviceFile.exists()) {
-            if(!deviceFile.canRead()) {
-                Log.d(TAG, "Insufficient permissions on " + deviceName +
-                        " -- does the app have the CAMERA permission?");
-                deviceReady = false;
-            }
-        } else {
-            Log.w(TAG, deviceName + " does not exist");
-            deviceReady = false;
-        }
-
-        if(deviceReady) {
-            Log.i(TAG, "Preparing camera with device name " + deviceName);
-            prepareCamera(deviceName);
-        }
-
-        mBitmap = Bitmap.createBitmap(IMG_WIDTH, IMG_HEIGHT,
-                Bitmap.Config.ARGB_8888);
+        mWebcam = new NativeWebcam("/dev/video0");
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         Log.i(TAG, "Service being destroyed");
-        stopCamera();
+        mWebcam.stop();
     }
 
     @Override
@@ -85,15 +41,10 @@ public class WebcamManager extends Service {
         return mBinder;
     }
 
-    public Bitmap getImage() {
-        processCamera();
-        // TODO where do we get the height and width, and is it wasteful to keep
-        // creating the bitmap over and over again?
-        // TODO maybe it's getImage(Bitmap) so you can decide what size you
-        // want. do we expect it to be of certain dimensions in JNI code?
-        if(cameraAttached()) {
-            pixeltobmp(mBitmap);
+    public Bitmap getFrame() {
+        if(!mWebcam.isAttached()) {
+            stopSelf();
         }
-        return mBitmap;
+        return mWebcam.getFrame();
     }
 }
