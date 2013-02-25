@@ -46,7 +46,8 @@ int open_device(const char* dev_name) {
     fd = open(dev_name, O_RDWR | O_NONBLOCK, 0);
 
     if(EACCES == errno) {
-        LOGE("Insufficient permissions on '%s': %d, %s", dev_name, errno, strerror(errno));
+        LOGE("Insufficient permissions on '%s': %d, %s", dev_name, errno,
+                strerror(errno));
     }
 
     if(-1 == fd) {
@@ -85,7 +86,8 @@ int init_mmap() {
         return ERROR_LOCAL;
     }
 
-    for(n_buffers = 0; n_buffers < req.count; ++n_buffers) { struct v4l2_buffer buf;
+    for(n_buffers = 0; n_buffers < req.count; ++n_buffers) {
+        struct v4l2_buffer buf;
         CLEAR(buf);
 
         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
