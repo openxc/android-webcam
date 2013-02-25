@@ -274,7 +274,7 @@ int read_frame(int width, int height) {
 int stop_capturing() {
     enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    if(-1 == xioctl(fd, VIDIOC_STREAMOFF, &type)) {
+    if(-1 != fd && -1 == xioctl(fd, VIDIOC_STREAMOFF, &type)) {
         return errnoexit("VIDIOC_STREAMOFF");
     }
 
@@ -294,7 +294,7 @@ int uninit_device() {
 
 int close_device() {
     int result = SUCCESS_LOCAL;
-    if(-1 == close(fd)) {
+    if(-1 != fd && -1 == close(fd)) {
         result = errnoexit("close");
     }
     fd = -1;

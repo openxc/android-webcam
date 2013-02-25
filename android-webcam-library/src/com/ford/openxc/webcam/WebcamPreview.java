@@ -91,7 +91,6 @@ public class WebcamPreview extends SurfaceView implements
     public void surfaceChanged(SurfaceHolder holder, int format, int winWidth,
             int winHeight) {
         Log.d("WebCam", "surfaceChanged");
-
         int width, height, dw, dh;
         if(winWidth * 3 / 4 <= winHeight) {
             dw = 0;
