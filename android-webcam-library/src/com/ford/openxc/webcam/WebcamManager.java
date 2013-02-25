@@ -55,28 +55,8 @@ public class WebcamManager extends Service {
         if(deviceFile.exists()) {
             if(!deviceFile.canRead()) {
                 Log.d(TAG, "Insufficient permissions on " + deviceName +
-                        " -- will try and change as root");
-                try {
-                    Process p = Runtime.getRuntime().exec("su");
-                    DataOutputStream stream = new DataOutputStream(p.getOutputStream());
-                    stream.writeBytes("chmod 0666 " + deviceName + "\n");
-                    stream.flush();
-                    stream.writeBytes("exit\n");
-                    stream.flush();
-                    p.waitFor();
-
-                    if(p.exitValue() != 0) {
-                        Log.w(TAG, "Unable to fix permissions on " + deviceName);
-                        deviceReady = false;
-                    }
-                } catch(IOException e) {
-                    Log.w(TAG, "Unable to fix permissions - " +
-                            "device may not be rooted", e);
-                    deviceReady = false;
-                } catch(InterruptedException e) {
-                    Log.w(TAG, "Unable to fix permissions", e);
-                    deviceReady = false;
-                }
+                        " -- does the app have the CAMERA permission?");
+                deviceReady = false;
             }
         } else {
             Log.w(TAG, deviceName + " does not exist");
