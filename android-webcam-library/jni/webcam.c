@@ -303,47 +303,6 @@ int close_device() {
     return result;
 }
 
-void shutdown_camera() {
-    stop_capturing();
-    uninit_device();
-    close_device();
-
-    if(rgb) {
-        free(rgb);
-    }
-
-    if(ybuf) {
-        free(ybuf);
-    }
-}
-
-int prepare_camera(const char* dev_name, int width, int height) {
-    int result = open_device(dev_name);
-    if(result == ERROR_LOCAL) {
-        return result;
-    }
-
-    result = init_device(width, height);
-
-    if(result == ERROR_LOCAL) {
-        return result;
-    }
-
-    result = start_capture();
-    if(result != SUCCESS_LOCAL) {
-        stop_capturing();
-        uninit_device();
-        close_device();
-        LOGE("device reset");
-    } else {
-        int area = width * height;
-        rgb = (int*)malloc(sizeof(int) * area);
-        ybuf = (int*)malloc(sizeof(int) * area);
-    }
-
-    return result;
-}
-
 bool camera_detected() {
     return fd != -1;
 }
@@ -412,29 +371,54 @@ void Java_com_ford_openxc_webcam_NativeWebcam_loadNextFrame(JNIEnv* env,
     AndroidBitmap_unlockPixels(env, bitmap);
 }
 
-// Functions below this point are basically just JNI wrappers, no significant
-// work done here.
-
 jint Java_com_ford_openxc_webcam_NativeWebcam_prepareCamera(JNIEnv* env,
         jobject thiz, jstring deviceName, jint width, jint height) {
     const char* dev_name = (*env)->GetStringUTFChars(env, deviceName, 0);
-    int result = prepare_camera(dev_name, width, height);
+    int result = open_device(dev_name);
     (*env)->ReleaseStringUTFChars(env, deviceName, dev_name);
+    if(result == ERROR_LOCAL) {
+        return result;
+    }
+
+    result = init_device(width, height);
+
+    if(result == ERROR_LOCAL) {
+        return result;
+    }
+
+    result = start_capture();
+    if(result != SUCCESS_LOCAL) {
+        stop_capturing();
+        uninit_device();
+        close_device();
+        LOGE("device reset");
+    } else {
+        int area = width * height;
+        rgb = (int*)malloc(sizeof(int) * area);
+        ybuf = (int*)malloc(sizeof(int) * area);
+    }
+
     return result;
+}
+
+void Java_com_ford_openxc_webcam_NativeWebcam_stopCamera(JNIEnv* env,
+        jobject thiz) {
+    stop_capturing();
+    uninit_device();
+    close_device();
+
+    if(rgb) {
+        free(rgb);
+    }
+
+    if(ybuf) {
+        free(ybuf);
+    }
 }
 
 jboolean Java_com_ford_openxc_webcam_NativeWebcam_cameraAttached(JNIEnv* env,
         jobject thiz) {
     return camera_detected();
-}
-
-void Java_com_ford_openxc_webcam_NativeWebcam_load(JNIEnv* env,
-        jobject thiz, jint width, jint height) {
-}
-
-void Java_com_ford_openxc_webcam_NativeWebcam_stopCamera(JNIEnv* env,
-        jobject thiz) {
-    shutdown_camera();
 }
 
 jint JNI_OnLoad(JavaVM* vm, void* reserved) {
