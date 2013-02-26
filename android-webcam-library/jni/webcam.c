@@ -350,7 +350,6 @@ bool camera_detected() {
 
 void process_camera(int width, int height) {
     if(!camera_detected()) {
-        LOGE("No camera device available");
         return;
     }
 
