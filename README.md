@@ -61,8 +61,7 @@ To use a USB webcam in Android, the kernel must be compiled with `V4L2`, e.g.:
     CONFIG_USB_VIDEO_CLASS_INPUT_EVDEV=y
 
 If the file `/dev/video0` appears on the device when you plug in a video camera,
-then you've got `V4L2` support. The Toshiba Thrive 10.1" and Google Nexus 7 have
-been confirmed to have the module.
+then you've got `V4L2` support.
 
 If you have `/dev/video0`, check the permissions in adb:
 
@@ -76,6 +75,15 @@ If the file is at least `0660`, owned by the `media` user with the group
 Add the `CAMERA` permissions to your app's manifest:
 
     <uses-permission android:name="android.permission.CAMERA" />
+
+**Tested and Working**
+
+* Toshiba Thrive 10.1"
+* Google Nexus 7
+
+**Tested and Not Working**
+
+* Galaxy Nexus (might not have enough power to start webcam)
 
 ## Contributors
 
