@@ -23,6 +23,21 @@ the `WebcamPreview`.
   compile the native library
 * Reference the library from your Android application
 
+**With Maven:**
+
+To install the library to your local Maven repository, so other apps can
+reference it:
+
+    $ cd android-webcam
+    $ cd android-webcam-library; ndk-build && cd ..
+    $ mvn install -pl android-webcam-library -am
+
+## Usage
+
+To install the example application, first install the library, then:
+
+    $ mvn package android:deploy android:run -pl example
+
 To just display the webcam image, add this to your app's layout:
 
     <com.ford.openxc.webcam.WebcamPreview
