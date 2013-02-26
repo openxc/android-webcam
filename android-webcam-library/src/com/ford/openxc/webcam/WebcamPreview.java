@@ -67,6 +67,10 @@ public class WebcamPreview extends SurfaceView implements
         canvas.drawBitmap(videoBitmap, null, mViewWindow, null);
     }
 
+    protected Rect getViewingWindow() {
+        return mViewWindow;
+    }
+
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         Log.d(TAG, "Surface created");
