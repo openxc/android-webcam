@@ -9,8 +9,8 @@ typedef struct {
     size_t length;
 } buffer;
 
-static unsigned int BUFFER_COUNT = 0;
-static buffer* FRAME_BUFFERS = NULL;
+unsigned int BUFFER_COUNT;
+buffer* FRAME_BUFFERS;
 
 /* Private: Open the video device at the named device node.
  *
