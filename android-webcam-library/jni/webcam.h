@@ -25,24 +25,20 @@
 #define ERROR_LOCAL -1
 #define SUCCESS_LOCAL 0
 
-struct buffer {
+typedef struct {
     void* start;
     size_t length;
-};
+} buffer;
 
-static int fd = -1;
-int* rgb = NULL;
-int* ybuf = NULL;
-struct buffer* buffers = NULL;
-static unsigned int n_buffers = 0;
+static int DEVICE_DESCRIPTOR = -1;
+int* RGB_BUFFER = NULL;
+int* Y_BUFFER = NULL;
+buffer* FRAME_BUFFERS = NULL;
+static unsigned int BUFFER_COUNT = 0;
 
-int y1192_tbl[256];
-int v1634_tbl[256];
-int v833_tbl[256];
-int u400_tbl[256];
-int u2066_tbl[256];
+int YUV_TABLE[5][256];
 
-jint Java_com_ford_openxc_webcam_NativeWebcam_prepareCamera(JNIEnv* env,
+jint Java_com_ford_openxc_webcam_NativeWebcam_startCamera(JNIEnv* env,
         jobject thiz, jstring deviceName, jint width, jint height);
 void Java_com_ford_openxc_webcam_NativeWebcam_loadNextFrame(JNIEnv* env,
         jobject thiz, jobject bitmap);

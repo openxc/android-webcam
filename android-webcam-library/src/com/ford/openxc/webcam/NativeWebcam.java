@@ -15,7 +15,8 @@ public class NativeWebcam implements Webcam {
     private int mWidth;
     private int mHeight;
 
-    private native int prepareCamera(String deviceName, int width, int height);
+
+    private native int startCamera(String deviceName, int width, int height);
     private native void processCamera();
     private native boolean cameraAttached();
     private native void stopCamera();
@@ -53,7 +54,7 @@ public class NativeWebcam implements Webcam {
 
         if(deviceReady) {
             Log.i(TAG, "Preparing camera with device name " + deviceName);
-            prepareCamera(deviceName, width, height);
+            startCamera(deviceName, width, height);
         }
     }
 

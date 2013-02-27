@@ -5,6 +5,17 @@ int errnoexit(const char *s) {
     return ERROR_LOCAL;
 }
 
+/* Private: Repeat an ioctl call until it completes and is not interrupted by a
+ * a signal.
+ *
+ * The ioctl may still succeed or fail, so do check the return status.
+ *
+ * fd - the file descriptor for the ioctl.
+ * request - the type of IOCTL to request.
+ * arg - the target argument for the ioctl.
+ *
+ * Returns the status of the ioctl when it completes.
+ */
 int xioctl(int fd, int request, void *arg) {
     int r;
 
@@ -15,24 +26,33 @@ int xioctl(int fd, int request, void *arg) {
     return r;
 }
 
-void cache_tbl() {
-    // prepare tbl
+/* Private: Generate and cache the lookup table necessary to convert from YUV to
+ * ARGB.
+ */
+void cache_yuv_lookup_table(int table[5][256]) {
     for(int i = 0; i < 256; i++) {
-        y1192_tbl[i] = 1192 * (i - 16);
-        if(y1192_tbl[i] < 0) {
-            y1192_tbl[i] = 0;
+        table[0][i] = 1192 * (i - 16);
+        if(table[0][i] < 0) {
+            table[0][i] = 0;
         }
 
-        v1634_tbl[i] = 1634 * (i - 128);
-        v833_tbl[i] = 833 * (i - 128);
-        u400_tbl[i] = 400 * (i - 128);
-        u2066_tbl[i] = 2066 * (i - 128);
+        table[1][i] = 1634 * (i - 128);
+        table[2][i] = 833 * (i - 128);
+        table[3][i] = 400 * (i - 128);
+        table[4][i] = 2066 * (i - 128);
     }
 }
 
-int open_device(const char* dev_name) {
+/* Private: Open the video device at the named device node.
+ *
+ * dev_name - the path to a device, e.g. /dev/video0
+ * fd - an output parameter to store the file descriptor once opened.
+ *
+ * Returns SUCCESS_LOCAL if the device was found and opened and ERROR_LOCAL if
+ * an error occurred.
+ */
+int open_device(const char* dev_name, int* fd) {
     struct stat st;
-
     if(-1 == stat(dev_name, &st)) {
         LOGE("Cannot identify '%s': %d, %s", dev_name, errno, strerror(errno));
         return ERROR_LOCAL;
@@ -43,22 +63,22 @@ int open_device(const char* dev_name) {
         return ERROR_LOCAL;
     }
 
-    fd = open(dev_name, O_RDWR | O_NONBLOCK, 0);
-
-    if(EACCES == errno) {
-        LOGE("Insufficient permissions on '%s': %d, %s", dev_name, errno,
-                strerror(errno));
-    }
-
-    if(-1 == fd) {
+    *fd = open(dev_name, O_RDWR | O_NONBLOCK, 0);
+    if(-1 == *fd) {
         LOGE("Cannot open '%s': %d, %s", dev_name, errno, strerror(errno));
+        if(EACCES == errno) {
+            LOGE("Insufficient permissions on '%s': %d, %s", dev_name, errno,
+                    strerror(errno));
+        }
         return ERROR_LOCAL;
     }
 
     return SUCCESS_LOCAL;
 }
 
-int init_mmap() {
+/* Private: Initialize memory mapped buffers for video frames.
+ */
+int init_mmap(int fd) {
     struct v4l2_requestbuffers req;
     CLEAR(req);
     req.count = 4;
@@ -79,41 +99,38 @@ int init_mmap() {
         return ERROR_LOCAL;
     }
 
-    buffers = calloc(req.count, sizeof(*buffers));
-
-    if(!buffers) {
+    FRAME_BUFFERS = calloc(req.count, sizeof(*FRAME_BUFFERS));
+    if(!FRAME_BUFFERS) {
         LOGE("Out of memory");
         return ERROR_LOCAL;
     }
 
-    for(n_buffers = 0; n_buffers < req.count; ++n_buffers) {
+    for(BUFFER_COUNT = 0; BUFFER_COUNT < req.count; ++BUFFER_COUNT) {
         struct v4l2_buffer buf;
         CLEAR(buf);
 
         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
         buf.memory = V4L2_MEMORY_MMAP;
-        buf.index = n_buffers;
+        buf.index = BUFFER_COUNT;
 
-        if(-1 == xioctl(fd, VIDIOC_QUERYBUF, &buf))
+        if(-1 == xioctl(fd, VIDIOC_QUERYBUF, &buf)) {
             return errnoexit("VIDIOC_QUERYBUF");
+        }
 
-        buffers[n_buffers].length = buf.length;
-        buffers[n_buffers].start =
-            mmap(NULL ,
-                    buf.length,
-                    PROT_READ | PROT_WRITE,
-                    MAP_SHARED,
-                    fd, buf.m.offset);
+        FRAME_BUFFERS[BUFFER_COUNT].length = buf.length;
+        FRAME_BUFFERS[BUFFER_COUNT].start = mmap(NULL, buf.length,
+                PROT_READ | PROT_WRITE, MAP_SHARED, fd, buf.m.offset);
 
-        if(MAP_FAILED == buffers[n_buffers].start)
+        if(MAP_FAILED == FRAME_BUFFERS[BUFFER_COUNT].start) {
             return errnoexit("mmap");
+        }
     }
 
     return SUCCESS_LOCAL;
 }
 
 
-int init_device(int width, int height) {
+int init_device(int fd, int width, int height) {
     struct v4l2_capability cap;
     struct v4l2_cropcap cropcap;
     struct v4l2_crop crop;
@@ -175,14 +192,14 @@ int init_device(int width, int height) {
     if(fmt.fmt.pix.sizeimage < min)
         fmt.fmt.pix.sizeimage = min;
 
-    return init_mmap();
+    return init_mmap(fd);
 }
 
-int start_capture() {
+int start_capture(int fd) {
     unsigned int i;
     enum v4l2_buf_type type;
 
-    for(i = 0; i < n_buffers; ++i) {
+    for(i = 0; i < BUFFER_COUNT; ++i) {
         struct v4l2_buffer buf;
         CLEAR(buf);
         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -201,14 +218,15 @@ int start_capture() {
     return SUCCESS_LOCAL;
 }
 
-void yuyv422_to_abgry(unsigned char *src, int width, int height) {
-    if((!rgb || !ybuf)) {
+void yuyv422_to_argb(unsigned char *src, int width, int height, int* rgb_buffer,
+        int* y_buffer) {
+    if((!rgb_buffer || !y_buffer)) {
         return;
     }
 
     int frameSize = width * height * 2;
-    int* lrgb = &rgb[0];
-    int* lybuf = &ybuf[0];
+    int* lrgb = &rgb_buffer[0];
+    int* lybuf = &y_buffer[0];
     for(int i = 0; i < frameSize; i += 4) {
         unsigned char y1, y2, u, v;
         y1 = src[i];
@@ -216,15 +234,15 @@ void yuyv422_to_abgry(unsigned char *src, int width, int height) {
         y2 = src[i + 2];
         v = src[i + 3];
 
-        int y1192_1 = y1192_tbl[y1];
-        int r1 = (y1192_1 + v1634_tbl[v]) >> 10;
-        int g1 = (y1192_1 - v833_tbl[v] - u400_tbl[u]) >> 10;
-        int b1 = (y1192_1 + u2066_tbl[u]) >> 10;
+        int y1192_1 = YUV_TABLE[0][y1];
+        int r1 = (y1192_1 + YUV_TABLE[1][v]) >> 10;
+        int g1 = (y1192_1 - YUV_TABLE[2][v] - YUV_TABLE[3][u]) >> 10;
+        int b1 = (y1192_1 + YUV_TABLE[4][u]) >> 10;
 
-        int y1192_2 = y1192_tbl[y2];
-        int r2 = (y1192_2 + v1634_tbl[v]) >> 10;
-        int g2 = (y1192_2 - v833_tbl[v] - u400_tbl[u]) >> 10;
-        int b2 = (y1192_2 + u2066_tbl[u]) >> 10;
+        int y1192_2 = YUV_TABLE[0][y2];
+        int r2 = (y1192_2 + YUV_TABLE[1][v]) >> 10;
+        int g2 = (y1192_2 - YUV_TABLE[2][v] - YUV_TABLE[3][u]) >> 10;
+        int b2 = (y1192_2 + YUV_TABLE[4][u]) >> 10;
 
         r1 = r1 > 255 ? 255 : r1 < 0 ? 0 : r1;
         g1 = g1 > 255 ? 255 : g1 < 0 ? 0 : g1;
@@ -243,11 +261,8 @@ void yuyv422_to_abgry(unsigned char *src, int width, int height) {
     }
 }
 
-void process_image(const void *p, int width, int height) {
-    yuyv422_to_abgry((unsigned char *)p, width, height);
-}
-
-int read_frame(int width, int height) {
+int read_frame(int fd, buffer* frame_buffers, int width, int height, int* rgb_buffer,
+        int* y_buffer) {
     struct v4l2_buffer buf;
     CLEAR(buf);
     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -263,9 +278,10 @@ int read_frame(int width, int height) {
         }
     }
 
-    assert(buf.index < n_buffers);
+    assert(buf.index < BUFFER_COUNT);
 
-    process_image(buffers[buf.index].start, width, height);
+    yuyv422_to_argb(frame_buffers[buf.index].start, width, height, rgb_buffer,
+            y_buffer);
 
     if(-1 == xioctl(fd, VIDIOC_QBUF, &buf))
         return errnoexit("VIDIOC_QBUF");
@@ -273,7 +289,7 @@ int read_frame(int width, int height) {
     return 1;
 }
 
-int stop_capturing() {
+int stop_capturing(int fd) {
     enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
     if(-1 != fd && -1 == xioctl(fd, VIDIOC_STREAMOFF, &type)) {
@@ -284,31 +300,28 @@ int stop_capturing() {
 }
 
 int uninit_device() {
-    for(unsigned int i = 0; i < n_buffers; ++i) {
-        if(-1 == munmap(buffers[i].start, buffers[i].length)) {
+    for(unsigned int i = 0; i < BUFFER_COUNT; ++i) {
+        if(-1 == munmap(FRAME_BUFFERS[i].start, FRAME_BUFFERS[i].length)) {
             return errnoexit("munmap");
         }
     }
 
-    free(buffers);
+    free(FRAME_BUFFERS);
     return SUCCESS_LOCAL;
 }
 
-int close_device() {
+int close_device(int* fd) {
     int result = SUCCESS_LOCAL;
-    if(-1 != fd && -1 == close(fd)) {
+    if(-1 != *fd && -1 == close(*fd)) {
         result = errnoexit("close");
     }
-    fd = -1;
+    *fd = -1;
     return result;
 }
 
-bool camera_detected() {
-    return fd != -1;
-}
-
-void process_camera(int width, int height) {
-    if(!camera_detected()) {
+void process_camera(int fd, buffer* frame_buffers, int width,
+        int height, int* rgb_buffer, int* ybuf) {
+    if(fd == -1) {
         return;
     }
 
@@ -331,9 +344,23 @@ void process_camera(int width, int height) {
             LOGE("select timeout");
         }
 
-        if(read_frame(width, height) == 1) {
+        if(read_frame(fd, frame_buffers, width, height, rgb_buffer, ybuf) == 1) {
             break;
         }
+    }
+}
+
+void stop_camera() {
+    stop_capturing(DEVICE_DESCRIPTOR);
+    uninit_device();
+    close_device(&DEVICE_DESCRIPTOR);
+
+    if(RGB_BUFFER) {
+        free(RGB_BUFFER);
+    }
+
+    if(Y_BUFFER) {
+        free(Y_BUFFER);
     }
 }
 
@@ -342,13 +369,7 @@ void Java_com_ford_openxc_webcam_NativeWebcam_loadNextFrame(JNIEnv* env,
     AndroidBitmapInfo info;
     int result;
     if((result = AndroidBitmap_getInfo(env, bitmap, &info)) < 0) {
-        LOGE("AndroidBitmap_getInfo() failed ! error=%d", result);
-        return;
-    }
-
-    process_camera(info.width, info.height);
-
-    if(!rgb || !ybuf) {
+        LOGE("AndroidBitmap_getInfo() failed, error=%d", result);
         return;
     }
 
@@ -357,13 +378,20 @@ void Java_com_ford_openxc_webcam_NativeWebcam_loadNextFrame(JNIEnv* env,
         return;
     }
 
-    void* pixels;
-    if((result = AndroidBitmap_lockPixels(env, bitmap, &pixels)) < 0) {
-        LOGE("AndroidBitmap_lockPixels() failed ! error=%d", result);
+    int* colors;
+    if((result = AndroidBitmap_lockPixels(env, bitmap, (void*)&colors)) < 0) {
+        LOGE("AndroidBitmap_lockPixels() failed, error=%d", result);
     }
 
-    int* colors = (int*) pixels;
-    int *lrgb = &rgb[0];
+    if(!RGB_BUFFER || !Y_BUFFER) {
+        LOGE("Unable to load frame, buffers not initialized");
+        return;
+    }
+
+    process_camera(DEVICE_DESCRIPTOR, FRAME_BUFFERS, info.width, info.height,
+            RGB_BUFFER, Y_BUFFER);
+
+    int *lrgb = &RGB_BUFFER[0];
     for(int i = 0; i < info.width * info.height; i++) {
         *colors++ = *lrgb++;
     }
@@ -371,31 +399,28 @@ void Java_com_ford_openxc_webcam_NativeWebcam_loadNextFrame(JNIEnv* env,
     AndroidBitmap_unlockPixels(env, bitmap);
 }
 
-jint Java_com_ford_openxc_webcam_NativeWebcam_prepareCamera(JNIEnv* env,
+jint Java_com_ford_openxc_webcam_NativeWebcam_startCamera(JNIEnv* env,
         jobject thiz, jstring deviceName, jint width, jint height) {
     const char* dev_name = (*env)->GetStringUTFChars(env, deviceName, 0);
-    int result = open_device(dev_name);
+    int result = open_device(dev_name, &DEVICE_DESCRIPTOR);
     (*env)->ReleaseStringUTFChars(env, deviceName, dev_name);
     if(result == ERROR_LOCAL) {
         return result;
     }
 
-    result = init_device(width, height);
-
+    result = init_device(DEVICE_DESCRIPTOR, width, height);
     if(result == ERROR_LOCAL) {
         return result;
     }
 
-    result = start_capture();
+    result = start_capture(DEVICE_DESCRIPTOR);
     if(result != SUCCESS_LOCAL) {
-        stop_capturing();
-        uninit_device();
-        close_device();
-        LOGE("device reset");
+        stop_camera();
+        LOGE("Unable to start capture, resetting device");
     } else {
         int area = width * height;
-        rgb = (int*)malloc(sizeof(int) * area);
-        ybuf = (int*)malloc(sizeof(int) * area);
+        RGB_BUFFER = (int*)malloc(sizeof(int) * area);
+        Y_BUFFER = (int*)malloc(sizeof(int) * area);
     }
 
     return result;
@@ -403,25 +428,15 @@ jint Java_com_ford_openxc_webcam_NativeWebcam_prepareCamera(JNIEnv* env,
 
 void Java_com_ford_openxc_webcam_NativeWebcam_stopCamera(JNIEnv* env,
         jobject thiz) {
-    stop_capturing();
-    uninit_device();
-    close_device();
-
-    if(rgb) {
-        free(rgb);
-    }
-
-    if(ybuf) {
-        free(ybuf);
-    }
+    stop_camera();
 }
 
 jboolean Java_com_ford_openxc_webcam_NativeWebcam_cameraAttached(JNIEnv* env,
         jobject thiz) {
-    return camera_detected();
+    return DEVICE_DESCRIPTOR != -1;
 }
 
 jint JNI_OnLoad(JavaVM* vm, void* reserved) {
-    cache_tbl();
+    cache_yuv_lookup_table(YUV_TABLE);
     return JNI_VERSION_1_6;
 }
