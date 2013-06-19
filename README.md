@@ -51,14 +51,9 @@ a Bitmap of the latest frame from the camera.
 
 ## USB Webcam Support
 
-To use a USB webcam in Android, the kernel must be compiled with `V4L2`, e.g.:
-
-    CONFIG_VIDEO_DEV=y
-    CONFIG_VIDEO_V4L2_COMMON=y
-    CONFIG_VIDEO_MEDIA=y
-    CONFIG_USB_VIDEO_CLASS=y
-    CONFIG_V4L_USB_DRIVERS=y
-    CONFIG_USB_VIDEO_CLASS_INPUT_EVDEV=y
+To use a USB webcam in Android, the kernel must be compiled with `V4L2`. Many
+late-model Android versions (4.2 and possibly 4.1/4.0) already have this
+enabled.
 
 If the file `/dev/video0` appears on the device when you plug in a video camera,
 then you've got `V4L2` support.
@@ -84,6 +79,18 @@ Add the `CAMERA` permissions to your app's manifest:
 **Tested and Not Working**
 
 * Galaxy Nexus (might not have enough power to start webcam)
+
+**Custom Kernel**
+
+If your Android version and device doesn't have include `V4L2` support, you'll
+need to load a custom Android ROM and configure the kernel with these options:
+
+    CONFIG_VIDEO_DEV=y
+    CONFIG_VIDEO_V4L2_COMMON=y
+    CONFIG_VIDEO_MEDIA=y
+    CONFIG_USB_VIDEO_CLASS=y
+    CONFIG_V4L_USB_DRIVERS=y
+    CONFIG_USB_VIDEO_CLASS_INPUT_EVDEV=y
 
 ## Contributors
 
