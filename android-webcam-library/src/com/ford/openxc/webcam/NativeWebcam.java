@@ -11,6 +11,7 @@ public class NativeWebcam implements Webcam {
     private static final int DEFAULT_IMAGE_WIDTH = 640;
     private static final int DEFAULT_IMAGE_HEIGHT = 480;
 
+    private boolean mDeviceReady;
     private Bitmap mBitmap;
     private int mWidth;
     private int mHeight;
@@ -38,28 +39,30 @@ public class NativeWebcam implements Webcam {
     }
 
     private void connect(String deviceName, int width, int height) {
-        boolean deviceReady = true;
-
         File deviceFile = new File(deviceName);
         if(deviceFile.exists()) {
             if(!deviceFile.canRead()) {
                 Log.d(TAG, "Insufficient permissions on " + deviceName +
                         " -- does the app have the CAMERA permission?");
-                deviceReady = false;
+                mDeviceReady = false;
+            } else {
+                mDeviceReady = true;
             }
         } else {
             Log.w(TAG, deviceName + " does not exist");
-            deviceReady = false;
+            mDeviceReady = false;
         }
 
-        if(deviceReady) {
+        if(mDeviceReady) {
             Log.i(TAG, "Preparing camera with device name " + deviceName);
             startCamera(deviceName, width, height);
         }
     }
 
     public Bitmap getFrame() {
-        loadNextFrame(mBitmap);
+        if(mDeviceReady) {
+            loadNextFrame(mBitmap);
+        }
         return mBitmap;
     }
 
