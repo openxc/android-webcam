@@ -46,7 +46,7 @@ To just display the webcam image, add this to your app's layout:
 
 If you want to modify the image at all, subclass `WebcamPreview` and override
 the `run()` method to make any modifications to the iamge before rendering it to
-the canvas. The `WebcamManager` service has a `getImage()` method which returns
+the canvas. The `WebcamManager` service has a `getFrame()` method which returns
 a Bitmap of the latest frame from the camera.
 
 ## USB Webcam Support
