@@ -9,6 +9,41 @@ webcam.
 The library also provides an example View that can be used directly in a layout,
 the `WebcamPreview`.
 
+## Problems?
+
+Instead of an FAQ, if you can't get the library to work, try one of these
+suggestions. Unfortunately video is fairly non-standard across Android OS builds
+and web cams, so I can't provide very good support.
+
+**I don't have a /dev/video0 on my Android tablet or phone.**
+
+You may need to change the device name in code to match what your camera appears
+as in the filesystem (#5).
+
+**My device is missing the kernel drivers.**
+
+A tip from Borja:
+
+>I write you again because finally i managed to have external webcam working on my device. I's not a v4l2 related problem. I's because samsung devices do not have uvcvideo module in their kernel. All new devices have v4l2 intalled in kernel but not uvcvideo.ko that is the driver (module) to get comunication between linux kernel and uvc compliant web camera.
+I had to recompile a custom kernel to enable USB_VIDEO_CLASS option. With new kernel i have no problems to get frames from my camera with an app named dashcam. Now i'm going to test openxc/android-webcam to try get video in my app.
+
+**I get an error about insufficient permissions on the video device**
+
+Make sure the `/dev/video0` file has permissions of at least `0660`, is owned by
+the `media` user and the group `camera`. Also add the `CAMERA` permissions to
+your app's manifest.
+
+**NativeWebcamJNI(2427): VIDIOC_DQBUF error 9, Bad file number**
+
+Based on #13, try changing this:
+
+```
+// Change this
+//*fd = open(dev_name, O_RDWR | O_NONBLOCK, 0);
+// To this:
+*fd = open(dev_name, O_RDWR);
+```
+
 ## Dependencies
 
 * [Android SDK](http://developer.android.com/sdk/index.html)
